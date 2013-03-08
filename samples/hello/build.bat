@@ -1,0 +1,1 @@
+csc /target:library /debug /out:Owin.Samples.dll Startup.cs
