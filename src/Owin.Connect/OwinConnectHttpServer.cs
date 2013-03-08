@@ -139,7 +139,7 @@ namespace Owin.Connect
             MemoryStream responseBody = new MemoryStream();
             env["owin.ResponseBody"] = responseBody;
             Dictionary<string, string[]> responseHeaders = new Dictionary<string, string[]>();
-            env["owin.ResponseHeaders"] = responseHeaders;
+            env["owin.ResponseHeaders"] = responseHeaders; 
 
             // run the OWIN app
 
