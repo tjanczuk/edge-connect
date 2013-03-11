@@ -1,1 +1,4 @@
-Owin.Samples.*
+bin
+obj
+packages
+NuGet.exe

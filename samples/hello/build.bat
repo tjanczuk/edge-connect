@@ -1,1 +1,1 @@
-csc /target:library /debug /out:Owin.Samples.dll Startup.cs
+msbuild src\Hello.csproj /t:rebuild -p:OutputPath=..\bin
