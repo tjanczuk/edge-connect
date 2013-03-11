@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
+using Owin.Builder;
+using Owin.Loader;
 
 namespace Owin.Connect
 {
@@ -39,45 +40,33 @@ namespace Owin.Connect
              * enable writing simple C# code snippets within *.js files themselves.
              */
 
-            // determine assembly name
 
-            string assemblyFile = this.GetValueOrDefault<string>(input, "assemblyFile", null);
+            AppDomain.CurrentDomain.AssemblyResolve += (a, b) =>
+                {
+                    var name = b.Name.Split(',')[0];
+                    var assembly = Assembly.LoadFrom("bin\\" + name + ".dll");
+                    return assembly;
+                };
 
-            // determine type name
+            // determine application name
 
-            // default type name is the assembly name plus ".Startup"
-            string defaultTypeName = assemblyFile.Substring(Math.Max(0, assemblyFile.LastIndexOf('\\')));
-            if (defaultTypeName.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase))
-            {
-                defaultTypeName = defaultTypeName.Substring(0, defaultTypeName.Length - 4);
-            }
-            defaultTypeName += ".Startup";
-            string typeName = this.GetValueOrDefault<string>(input, "typeName", defaultTypeName);
+            var application = this.GetValueOrDefault<string>(input, "assemblyFile", null);
 
-            // determine method name
+            // load entrypoint
+            // TODO: chain csx loader in front of default loader
+            
+            var loader = new DefaultLoader();
+            var startup = loader.Load(application);
 
-            string methodName = this.GetValueOrDefault<string>(input, "methodName", "Invoke");
+            // call entry-point with an IAppBuilder
 
-            // Load OWIN application
+            var builder = new AppBuilder();
+            startup(builder);
 
-            Assembly assembly = Assembly.LoadFrom(assemblyFile);
-            Type type = assembly.GetType(typeName, true, true);
-            object instance = Activator.CreateInstance(type, false);
-            MethodInfo method = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
+            // produce and cache app func
 
-            // Normalize to Func<IDictionary<string, object>, Task>
-
-            Func<IDictionary<string, object>, Task> invoke = (env) =>
-            {
-                return (Task)method.Invoke(instance, new object[] { env });
-            };
-
-            // Register the method and return its integer identifier to node.js. 
-            // The identifier is the index into the owinHandlers list.
-            // Note: no sychronization required since we are running on singleton node.js thread. 
-
+            var invoke = (Func<IDictionary<string, object>, Task>)builder.Build(typeof(Func<IDictionary<string, object>, Task>));
             owinHandlers.Add(invoke);
-
             return Task.FromResult((object)(owinHandlers.Count - 1));
         }
 
@@ -168,7 +157,7 @@ namespace Owin.Connect
 
                 // serialize response body to a byte[]
 
-                env["owin.ResponseBody"] = responseBody.GetBuffer();
+                env["owin.ResponseBody"] = responseBody.ToArray();
 
                 // normalize response headers to the representiation required by express.js
 
