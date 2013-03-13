@@ -12,7 +12,7 @@
   "engines": { "node": "0.8.x" },
   "licenses": [ { "type": "Apache", "url": "http://www.apache.org/licenses/LICENSE-2.0" } ],
   "dependencies": {
-    "owin": "0.5.0"
+    "owin": "0.6.0"
   },
   "devDependencies": {
     "mocha": "1.8.1"
